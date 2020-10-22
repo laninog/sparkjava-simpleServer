@@ -1,7 +1,5 @@
 package com.sparkjava.test;
 
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,16 +7,16 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static spark.Spark.*;
 
 public class Server {
 
-    private static Logger log = Logger.getLogger(Server.class);
+    private static Logger log = LoggerFactory.getLogger(Server.class);
 
     public static void main(String args[]) {
-
-        BasicConfigurator.configure();
 
         log.info("Starting spark...");
 

@@ -4,15 +4,11 @@ import static spark.Spark.before;
 import static spark.Spark.get;
 import static spark.Spark.options;
 import static spark.Spark.path;
+import static spark.Spark.port;
 import static spark.Spark.post;
 import static spark.Spark.put;
-import static spark.Spark.port;
-
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.RouteGroup;
 
 /**
@@ -20,11 +16,9 @@ import spark.RouteGroup;
  */
 public class SimpleServer {
 
-    private static Logger log = Logger.getLogger(SimpleServer.class);
+    private static Logger log = LoggerFactory.getLogger(SimpleServer.class);
 
     public static void main(String args[]) {
-
-        initLog();
 
         log.info("Starting spark...");
 
@@ -43,20 +37,9 @@ public class SimpleServer {
 
     }
 
-    private static void initLog() {
-        ConsoleAppender console = new ConsoleAppender();
-
-        String PATTERN = "%d [%p|%c|%C{1}] %m%n";
-        console.setLayout(new PatternLayout(PATTERN));
-        console.setThreshold(Level.DEBUG);
-        console.activateOptions();
-
-        Logger.getRootLogger().addAppender(console);
-    }
-
     private static void createUserResource() {
 
-        path("/user", new RouteGroup() {
+        path("/users", new RouteGroup() {
 
             @Override
             public void addRoutes() {
