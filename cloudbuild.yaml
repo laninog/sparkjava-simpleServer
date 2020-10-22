@@ -5,7 +5,7 @@ steps:
 - name: gcr.io/cloud-builders/gsutil
   id: Get M2 Cache
   args: ['cp', 'gs://${_BUCKET}/m2.tar.gz', 'm2.tar.gz']
-- name: gcr.io/cloud-builders/gsutil
+- name: gcr.io/$PROJECT_ID/tar
   id: Expand M2 Cache
   args: ['tar', 'xpzf', 'm2.tar.gz']
 ###########################################################
@@ -19,7 +19,7 @@ steps:
 #         additional dependencies downloaded during the
 #         build.
 ###########################################################
-- name: gcr.io/cloud-builders/gsutil
+- name: gcr.io/$PROJECT_ID/tar
   id: Compress M2 Cache
   args: ['tar','cpzf', 'm2.tar.gz', '.m2']
 - name: gcr.io/cloud-builders/gsutil
