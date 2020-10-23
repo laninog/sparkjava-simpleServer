@@ -53,7 +53,7 @@ steps:
       sed "s/COMMIT_SHA/${SHORT_SHA}/g" > sparkjava-simpleServer-env/kubernetes.yaml
 
 # Step 8: Pushes the manifest back to env
-- name: 'gcr.io/cloud-builders/gcloud'
+- name: 'gcr.io/cloud-builders/git'
   id: Push manifest
   entrypoint: /bin/sh
   args:
