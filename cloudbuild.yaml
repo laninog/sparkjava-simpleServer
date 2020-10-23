@@ -1,43 +1,74 @@
 steps:
-###########################################################
 # Step 1: Retrieve the cached .m2 directory from GCS
-###########################################################
 - name: gcr.io/cloud-builders/gsutil
   id: Get M2 Cache
   args: ['cp', 'gs://${_BUCKET}/m2.tar.gz', 'm2.tar.gz']
 - name: gcr.io/$PROJECT_ID/tar
   id: Expand M2 Cache
   args: ['tar', 'xpzf', 'm2.tar.gz']
-###########################################################
+
 # Step 2: Build, Test, and Verify
-###########################################################
 - name: 'gcr.io/cloud-builders/mvn'
   id: Test and Build
   args: ['-Dmaven.repo.local=/workspace/.m2/repository', 'clean', 'install', '-Dmaven.test.skip=true']
-###########################################################
-# Step 3: Update cached .m2 directory on GCS with any
-#         additional dependencies downloaded during the
-#         build.
-###########################################################
+
+# Step 3: Update cached .m2 directory on GCS
 - name: gcr.io/$PROJECT_ID/tar
   id: Compress M2 Cache
   args: ['tar','cpzf', 'm2.tar.gz', '.m2']
 - name: gcr.io/cloud-builders/gsutil
   id: Save M2 Cache
   args: ['cp', 'm2.tar.gz', 'gs://${_BUCKET}/m2.tar.gz']
-###########################################################
-# Step 4: Build image
-###########################################################
-- name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build', '-t', 'gcr.io/$PROJECT_ID/sparkjava-simple-server', '.' ]
-###########################################################
-# Step 5: Upload image
-###########################################################
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'gcr.io/$PROJECT_ID/sparkjava-simple-server']
 
-images:
-- 'gcr.io/$PROJECT_ID/sparkjava-simple-server'
+# Step 4: Build image
+- name: 'gcr.io/cloud-builders/docker'
+  id: Build image
+  args: [ 'build', '-t', 'gcr.io/$PROJECT_ID/sparkjava-simple-server:$SHORT_SHA', '.' ]
+
+# Step 5: Upload image
+- name: 'gcr.io/cloud-builders/docker'
+  id: Upload image
+  args: ['push', 'gcr.io/$PROJECT_ID/sparkjava-simple-server:$SHORT_SHA']
+
+# Step 6: Clones the env repository
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: Clone env repository
+  entrypoint: /bin/sh
+  args:
+    - '-c'
+    - |
+      git clone git@github.com:laninog/sparkjava-simpleServer-env.git && \
+      cd sparkjava-simpleServer-env && \
+      git checkout candidate && \
+      git config user.email $(gcloud auth list --filter=status:ACTIVE --format='value(account)')
+
+# Step 7: Generates the new manifest
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: Generate manifest
+  entrypoint: /bin/sh
+  args:
+    - '-c'
+    - |
+      sed "s/GOOGLE_CLOUD_PROJECT/${PROJECT_ID}/g" kubernetes.yaml.tpl | \
+      sed "s/COMMIT_SHA/${SHORT_SHA}/g" > sparkjava-simpleServer-env/kubernetes.yaml
+
+# Step 8: Pushes the manifest back to env
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: Push manifest
+  entrypoint: /bin/sh
+  args:
+    - '-c'
+    - |
+      set -x && \
+      cd sparkjava-simpleServer-env && \
+      git add kubernetes.yaml && \
+      git commit -m "Deploying image gcr.io/${PROJECT_ID}/sparkjava-simpleServer-env:${SHORT_SHA}
+      Built from commit ${COMMIT_SHA} of repository sparkjava-simpleServer
+      Author: $(git log --format='%an <%ae>' -n 1 HEAD)" && \
+      git push origin candidate
+
+#images:
+#- 'gcr.io/$PROJECT_ID/sparkjava-simple-server'
 
 substitutions:
   # Default values
